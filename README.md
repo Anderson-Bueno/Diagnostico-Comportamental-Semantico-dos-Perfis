@@ -43,8 +43,11 @@ Evitar **overfitting semântico** e atribuição injustificada de perfis a clien
 
 text
 Cliente: idcliente=12343890
+
 Perfil atribuído: Elaborador
+
 Produtos comprados:
+
 - ESPÁTULA 
 - FRUTAS 
 - PLACA C SUPORTE 
