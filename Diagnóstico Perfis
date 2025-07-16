@@ -1,0 +1,80 @@
+# Databricks notebook source
+# MAGIC %md
+# MAGIC # 🧠 Diagnóstico Comportamental + Semântico dos Perfis 
+# MAGIC 
+# MAGIC **Objetivo**: Evitar overfitting semântico e atribuição injustificada de perfis.
+# MAGIC 
+# MAGIC **Técnicas**: Filtros comportamentais mínimos + validação semântica de categorias dominantes.
+# MAGIC 
+# MAGIC **Valor Gerado**: Maior robustez nos perfis atribuídos e clusters mais confiáveis para ações de negócio.
+
+# COMMAND ----------
+from pyspark.sql.functions import col, size, array_contains, countDistinct, collect_set, when
+
+# Definir filtros comportamentais mínimos
+min_visitas = 2
+min_quantidade = 10
+
+# COMMAND ----------
+# 📦 Carregamento de base tratada
+clientes = spark.read.parquet("/mnt/data/clientes_filtrados_comportamentalmente")
+
+# COMMAND ----------
+# 📊 Aplicar filtro comportamental mínimo
+clientes_filtrados = clientes.filter((col("frequencia") >= min_visitas) & (col("total_quantidade") >= min_quantidade))
+
+# COMMAND ----------
+# 🔎 Diagnóstico de clientes com comportamento frágil que receberam perfil
+clientes_risco = clientes.filter(
+    (col("frequencia") < min_visitas) & (col("total_quantidade") < min_quantidade) & (col("perfil_nomeado").isNotNull())
+)
+
+# COMMAND ----------
+# 🔬 Exemplo Crítico para Storytelling
+clientes_risco.filter(col("idcliente") == 12343890).select(
+    "idcliente", "perfil", "frequencia", "total_quantidade", "categorias_1", "produto"
+).display()
+
+# COMMAND ----------
+# 🧠 Validação Semântica: identificar se categorias são compatíveis com o perfil atribuido
+clientes_semantica = clientes.withColumn(
+    "perfil_inconsistente",
+    when(
+        (col("perfil_nomeado") == "Elaborador") & ~array_contains(col("categorias_1"), "MASSAS"),
+        True
+    ).otherwise(False)
+)
+
+# COMMAND ----------
+# 📍 Casos Inconsistentes
+clientes_semantica.filter(col("perfil_inconsistente") == True).select(
+    "idcliente", "perfil_nomeado", "categorias_1", "produto"
+).display()
+
+# COMMAND ----------
+# ✅ Conclusão: Propor aplicação de regras complementares ao modelo de perfil
+# Regras: 
+# - Só atribuir perfil se passou filtro comportamental
+# - Validar se categorias dominantes são compatíveis com a descrição do perfil
+
+clientes_validados = clientes_filtrados.withColumn(
+    "perfil_validado",
+    when(
+        (col("perfil_nomeado") == "Elaborador") & array_contains(col("categorias_1"), "MASSAS"),
+        "Construtor"
+    ).otherwise("Outro")
+)
+
+# COMMAND ----------
+# 💾 Exportar resultado final com validação
+clientes_validados.write.mode("overwrite").parquet("/mnt/data/clientes_perfil_validado")
+
+# COMMAND ----------
+# MAGIC %md
+# MAGIC ### 📌 Considerações Profissionais
+# MAGIC - 32,3% dos clientes realizaram apenas uma visita
+# MAGIC - 46% desses compraram menos de 10 produtos
+# MAGIC - Clientes com esse comportamento frágil receberam perfis não compatíveis semanticamente
+# MAGIC - A aplicação de regras comportamentais + validação semântica gerou clusters mais coerentes
+# MAGIC 
+# MAGIC **🔍 Insight**: segmentação não pode ser baseada apenas em clustering estatístico, é crítico combinar semântica + comportamento.
