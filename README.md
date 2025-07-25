@@ -1,4 +1,4 @@
-## 🧠 Diagnóstico Comportamental + Semântico dos Perfis
+## 🧠 Segmentação de clientes baseada em dados comportamentais gera perfis incoerentes quando os dados são escassos, inconsistentes ou semanticamente desconexos, levando a decisões de negócio equivocadas (como marketing direcionado errado)
 
 ### 🎯 Objetivo
 Evitar **overfitting semântico** e atribuição injustificada de perfis a clientes com dados comportamentais frágeis ou inconsistentes. A meta foi garantir que apenas clientes com evidências mínimas suficientes sejam segmentados, aumentando a confiabilidade analítica.
